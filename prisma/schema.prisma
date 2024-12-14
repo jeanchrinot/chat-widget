@@ -15,46 +15,37 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  USER
   CUSTOMER
-}
-enum MessageType {
-  TEXT
-  MEDIA
-  AUDIO
-}
-
-enum ConversationType {
-  WITH_ASSISTANT
-  WITH_USER
+  USER
 }
 
 model User {
-
   id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   name                  String
   email                 String    @unique
   password              String?
-  role                  UserRole  @default(USER)
+  role                  UserRole  @default(CUSTOMER)
   isAdmin               Boolean   @default(false)
-  bio                   String?
+  isBanned Boolean @default(false)
   isTwoFactorEnabled    Boolean   @default(false)
   twoFactorConfirmation TwoFactorConfirmation? 
   emailVerified         DateTime? 
   image                 String?
-  account               Account[]
-  
+  accounts              Account[]
+  collaborations Collaborator[]
+  blogs Blog[]
+  tutorials Tutorial[]
+  variables Variable[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
 
 model Account {
-
-  id                 String   @default(auto()) @id @map("_id") @db.ObjectId
-  userId             String   @unique @db.ObjectId
-  type               String
-  provider           String
-  providerAccountId  String
+  id                 String    @default(auto()) @id @map("_id") @db.ObjectId
+  userId             String    @db.ObjectId
+  type               String?
+  provider           String?
+  providerAccountId  String?
   refresh_token      String?
   access_token       String?
   expires_at         Int?
@@ -63,48 +54,123 @@ model Account {
   id_token           String?
   session_state      String?
 
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects           Project[]
-  activeProject      Project? @relation("ActiveProject", fields: [activeProjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  activeProjectId    String?  @db.ObjectId
-
-  initiatedConversations  Conversation[]  @relation("initiator")
-  participantConversations  Conversation[]  @relation("participant")
- 
-  messages           Message[] 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  activeProject      Project?  @relation("ActiveProject", fields: [activeProjectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  activeProjectId    String?   @db.ObjectId
 
   @@unique([provider, providerAccountId])
 }
 
 model Project {
-  
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  image    String?
+  accountId      String      @db.ObjectId
+  account        Account     @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  flows          Flow[]
+  botId      String?      @db.ObjectId
+  bot Bot? 
+  chatWidget      ChatWidget?
+  channels      Channel[]
+  variables Variable[]
+  collaborators  Collaborator[]
+  requests       Request[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  activeFor      Account[]   @relation("ActiveProject")
+  //Knowledge Base
+  kbTopic  KnowdledgeBaseTopic[]
+  kbQA KnowdledgeBaseQA[]
+  chatBotSettings Json?
+  liveChatSettings Json?
+}
+
+enum CollaboratorRole {
+  ADMIN
+  DEFAULT
+}
+
+model Collaborator{
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?
-  accountId   String   @db.ObjectId
-  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  
-  flows       Flow[]
-  channels    Channel[]
-  collaborators     Account[] @relation("ActiveProject")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role CollaboratorRole
+  projectId String @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  userId String @db.ObjectId
+  user User @relation(fields: [userId],references: [id],onDelete: NoAction)
+}
+
+enum RequestStatus {
+  PENDING
+  FAILED
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+model Request {
+  id  String   @id @default(auto()) @map("_id") @db.ObjectId
+  status RequestStatus? @default(PENDING) 
+  role CollaboratorRole
+  projectId String @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  email String
+  @@unique([email, projectId])
+}
+
+// Chatbot Related Models
+
+model Bot {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId @unique
+  project   Project  @relation(fields: [projectId], references: [id],onDelete: Cascade)
+  name           String
+  settings Json?
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Flow {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   projectId String   @db.ObjectId
-  project   Project  @relation(fields: [projectId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  objective    String?
+  prompt String?
+  nodes Json?
+  edges Json?
+  tools Json?
+  active_tools Json?
+  variables Variable[]
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
 }
 
-model Channel {
+enum VariableType {
+  UserVariable // User Input
+  UserTag
+  BotVariable
+}
+
+model Variable {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId String? @db.ObjectId
+  user   User?  @relation(fields: [userId], references: [id])
+  conversationId String? @db.ObjectId
+  conversation   Conversation?  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   projectId String   @db.ObjectId
   project   Project  @relation(fields: [projectId], references: [id])
+  flowId String   @db.ObjectId
+  flow   Flow  @relation(fields: [flowId], references: [id])
+  type VariableType @default(UserVariable) 
+  name           String
+  value    String?
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model VerificationToken {
@@ -142,44 +208,228 @@ model TwoFactorConfirmation {
   @@unique([userId])
 }
 
+// Chat Related Models
+model ChatWidget {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId @unique
+  project   Project  @relation(fields: [projectId], references: [id])
+  settings Json
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ChannelType {
+  ChatPage 
+  Website
+  Facebook
+  Whatsapp
+}
+
+model Channel {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  channelType ChannelType // ChatPage, Website, Facebook, Whatsapp
+  channelId String @unique // website domain , chatpage id, facebook page id, whatsapp id
+  conversations Conversation[]
+  settings Json?
+  website String?
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ConversationStatus {
+  Pending
+  Active
+  Closed
+}
 
 model Conversation {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-
-  conversationType  ConversationType @default(WITH_USER)
-  initiatorId       String  @db.ObjectId
-  participantId     String  @db.ObjectId
-
-  initiator         Account @relation("initiator", fields: [initiatorId], references: [id], onDelete: Cascade)
-  participant       Account @relation("participant", fields: [participantId], references: [id], onDelete: Cascade)
-
+  participants  Participant[] // List of participants (e.g., user, bot, or agent)
   messages          Message[]
-
+  variables Variable[]
+  status ConversationStatus  @default(Active)
+  channelId String   @db.ObjectId
+  channel   Channel  @relation(fields: [channelId], references: [id])
+  sessionId String // last or current chat session id
+  //Time stmps
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt 
+  updatedAt DateTime @updatedAt
+}
 
-  @@unique([initiatorId, participantId])
+enum ParticipantType {
+Bot
+User
+Agent
 }
 
 model Message {
   id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  content       String
-  fileUrls      String[]
-  caption       String?
+  content       String?
+  attachments   Json?
 
+  sessionId String // chat session id
   senderId      String @db.ObjectId
-  sender        Account  @relation(fields: [senderId], references: [id]) 
-
-  messageType   MessageType @default(TEXT)
+  senderType ParticipantType // bot, user, agent
 
   conversationId String @db.ObjectId      
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   deleted Boolean @default(false)
-
+  status String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@index([senderId])
-  @@index([conversationId])
+model Participant {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId 
+  participantId       String?  @db.ObjectId 
+  participantType ParticipantType // bot, user , agent
+  status String @default("active") // active, inactive
+  conversationId String @db.ObjectId      
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Website Content Related Models
+model Blog {
+  id             String    @id  @default(auto()) @map("_id") @db.ObjectId
+  title          String? 
+  slug           String?  
+  intro          String?  
+  content        String?  
+  type           String?  
+  categoryId     String?  
+  categoryName   String?  
+  isFeatured     Boolean? @default(false)
+  featuredImage  String? 
+  articleType    String? 
+  metaTitle      String? 
+  metaKeywords   String? 
+  metaDescription String?  
+  metaOgImage    String?  
+  metaOgUrl      String?  
+  hits           String?  
+  order          String?  
+  status         String?  
+  moderatedBy    String?  
+  moderatedAt    DateTime? @updatedAt
+  authorId       String @db.ObjectId        // Foreign key to CustomUser
+  author         User @relation(fields: [authorId], references: [id])
+  updatedBy      String?  
+  deletedBy      String?  
+  deletedAt      DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+model Tutorial {
+  id             String    @id  @default(auto()) @map("_id") @db.ObjectId
+  title          String? 
+  intro          String?  
+  content        String?  
+  type           String?  
+  categoryId     String?  
+  categoryName   String?  
+  isFeatured     Boolean? @default(false)
+  featuredImage  String? 
+  articleType    String? 
+  metaTitle      String? 
+  metaKeywords   String? 
+  metaDescription String?  
+  metaOgImage    String?  
+  metaOgUrl      String?  
+  hits           String?  
+  order          String?  
+  status         String?  
+  moderatedBy    String?  
+  moderatedAt    DateTime? @updatedAt
+  authorId       String @db.ObjectId        // Foreign key to CustomUser
+  author         User @relation(fields: [authorId], references: [id])
+  updatedBy      String?  
+  deletedBy      String?  
+  deletedAt      DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+
+model SeoData {
+  id             String      @id  @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  path           String?
+  meta_title     String?
+  meta_keywords  String?
+  meta_description String?
+  meta_og_image  String?
+  meta_og_url    String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  published_at   DateTime?
+}
+
+
+model StaticPage {
+  id              String       @id  @default(auto()) @map("_id") @db.ObjectId
+  name            String    
+  slug            String?   
+  content         String?   
+  type            String?   
+  meta_title      String?   
+  meta_description String?  
+  meta_keywords   String?   
+  meta_og_image   String?   
+  meta_og_url     String?   
+  status          String?  
+  published_at    DateTime?
+  created_at      DateTime?  @default(now())
+  updated_at      DateTime?  @updatedAt
+}
+
+
+enum NotificationType {
+  GENERAL
+  TAG
+  MESSAGE
+  BILLING
+}
+model Notification{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  descriptionId String
+  type NotificationType
+  relatedId String @db.ObjectId  
+  createdAt DateTime
+}
+
+// Knowldge Base
+model KnowdledgeBaseTopic {
+  id String   @id @default(auto()) @map("_id") @db.ObjectId
+  // TODO: Add userId field here
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  // accountId String   @db.ObjectId
+  // account   Account  @relation(fields: [accountId], references: [id])
+  kbQA KnowdledgeBaseQA [] 
+  name           String
+  description    String?
+}
+
+model KnowdledgeBaseQA {
+  id String   @id @default(auto()) @map("_id") @db.ObjectId
+  // TODO: Add userId field here
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  // accountId String   @db.ObjectId
+  // account   Account  @relation(fields: [accountId], references: [id]) 
+  topicId String   @db.ObjectId
+  topic   KnowdledgeBaseTopic  @relation(fields: [topicId], references: [id]) 
+  question  String
+  answer    String
 }

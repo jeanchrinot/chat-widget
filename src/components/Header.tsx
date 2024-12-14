@@ -1,21 +1,51 @@
-import { Minus } from "lucide-react";
+import { useLayout } from "@/hooks/useLayout"
+import { Minus } from "lucide-react"
+import { UserAvatar } from "./Avatar"
 
 // Local imports
-import { MenuDrawer } from "./Drawer";
-import { IconButton } from "./IconButton";
+// import { MenuDrawer } from "./Drawer"
+import { IconButton } from "./IconButton"
 
 interface HeaderProps {
-  expanded: boolean;
-  onClear: () => void;
-  onExpand: () => void;
-  onClose: () => void;
+  expanded: boolean
+  onClear: () => void
+  onExpand: () => void
+  onClose: () => void
 }
 
 export function Header({ onExpand, expanded, onClose }: HeaderProps) {
+  const { mainBgClassName } = useLayout()
   return (
-    <div className="flex bg-white justify-between px-2 py-3 space-x-2 border-b border-gray-500">
-      <MenuDrawer />
-      <div className="flex justify-end space-x-2">
+    <div
+      className={`flex ${mainBgClassName} justify-between px-2 py-2 space-x-2 `}
+    >
+      {/* <MenuDrawer /> */}
+      <div className="flex flex-row">
+        <div className="relative">
+          <UserAvatar
+            src="https://t3.ftcdn.net/jpg/06/93/16/82/240_F_693168257_5h7lep6mj5wHPcR9AdXurZwf5TORoj5R.jpg"
+            alt="Avatar"
+            name="Bot"
+            customClass="w-10 h-10"
+          />
+          <span
+            className="flex w-2 h-2 bg-green-500 rounded-full absolute"
+            style={{ bottom: "4px", right: "4px" }}
+          ></span>
+        </div>
+        <div className="flex flex-col ml-3 justify-center">
+          <span className="text-sm font-bold" style={{ marginTop: "10px" }}>
+            Chelsea
+          </span>
+          <span
+            className="text-xs text-slate-100"
+            style={{ marginTop: "-3px" }}
+          >
+            online
+          </span>
+        </div>
+      </div>
+      <div className="flex justify-end items-center space-x-1">
         <IconButton onClick={onClose}>
           <Minus className="h-5 w-5 cursor-pointer" />
         </IconButton>
@@ -70,5 +100,5 @@ export function Header({ onExpand, expanded, onClose }: HeaderProps) {
         </IconButton>
       </div>
     </div>
-  );
+  )
 }

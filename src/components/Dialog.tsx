@@ -1,88 +1,151 @@
-import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useRef, useCallback } from "react";
+import axios from "axios"
+import { useQuery } from "@tanstack/react-query"
+import { useState, useEffect, useRef, useCallback } from "react"
 
 // Local imports
-import { Header } from "./Header";
-import { MessageForm } from "./MessageForm";
-import { MessageList } from "./MessageList";
-import { useSession } from "@/hooks/useSession";
-import WelecomeComponent from "./WelecomeComponent";
-import { useZustandStore } from "@/hooks/useZustandStore";
+import { Header } from "./Header"
+import { MessageForm } from "./MessageForm"
+// import { MessageList } from "./MessageList"
+import { useSession } from "@/hooks/useSession"
+// import WelecomeComponent from "./WelecomeComponent"
+import { useZustandStore } from "@/hooks/useZustandStore"
+import { useLayout } from "@/hooks/useLayout"
+import Messages from "./Messages"
+import { useStore } from "@/hooks/useStore"
+import { ParticipantType } from "@prisma/client"
+import QuickReplies from "./QuickReplies"
+import Starter from "./Starter"
 
 interface DialogProps {
-  infoMessage: React.ReactNode;
-  isOpen: boolean;
-  name: string;
-  welcomeMessage: string;
-  onClose: () => void;
+  infoMessage: React.ReactNode
+  isOpen: boolean
+  name: string
+  welcomeMessage: string
+  onClose: () => void
 }
 
-export function Dialog({ isOpen, onClose }: DialogProps) {
-  const { session } = useSession();
-  const [expanded, setExpanded] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-  const { currentConversationId, setCurrentConversationId, setConversations } =
-    useZustandStore();
+const defaultMessages = [
+  {
+    id: "67547fc747c22f0528c108eb",
+    content:
+      "Hey! 👋🏾 I'm Chelsea, your virtual assistant. How can I help you today?",
+    attachments: null,
+    sessionId: "b39f8a7e-dc34-402d-8d07-31c64c8bd919",
+    senderId: "674af8cd4da47e3d26cd66be",
+    senderType: ParticipantType.Bot,
+    conversationId: "67547e7247c22f0528c108d4",
+    deleted: false,
+    createdAt: "2024-12-07T17:03:03.293Z",
+    updatedAt: "2024-12-07T17:03:03.293Z",
+  },
+]
+
+const quickReplies = [
+  "I want to get a free e-book.",
+  "I would like to get a free quote for a website design.",
+]
+
+export function Dialog() {
+  // const { session } = useSession()
+  const { userToken, conversation, messages, setMessages, setQuickReplies } =
+    useStore()
+  const { openDialog, setOpenDialog } = useLayout()
+  const [expanded, setExpanded] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  // const listRef = useRef<HTMLDivElement>(null)
+  // const { currentConversationId, setCurrentConversationId, setConversations } =
+  //   useZustandStore()
 
   const handleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-    setIsScrolled(false);
-  }, []);
+    setExpanded((prev) => !prev)
+    setIsScrolled(false)
+  }, [])
 
-  console.log("Session", session);
-  const fetchConversations = async () => {
-    try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_NEXT_AUTH_API_URL}/api/conversations`,
-        {
-          params: { conversationId: session?.user?.id },
-          withCredentials: true,
-        }
-      );
-      console.log(data);
-      return data;
-    } catch (err) {
-      console.log(err);
-      return [];
-    }
-  };
+  // console.log("Session", session)
+  // const fetchConversations = async () => {
+  //   try {
+  //     const { data } = await axios.get(
+  //       `${import.meta.env.VITE_NEXT_AUTH_API_URL}/api/conversations`,
+  //       {
+  //         params: { conversationId: session?.user?.id },
+  //         withCredentials: true,
+  //       }
+  //     )
+  //     console.log(data)
+  //     return data
+  //   } catch (err) {
+  //     console.log(err)
+  //     return []
+  //   }
+  // }
 
-  const {
-    data: conversations,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["conversations", session?.user?.id],
-    queryFn: async () => {
-      const data = await fetchConversations();
-      setConversations(data);
-      if (data.length > 0 && !currentConversationId) {
-        setCurrentConversationId(data[0].id);
-      }
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
+  // const {
+  //   data: conversations,
+  //   isLoading,
+  //   isError,
+  //   error,
+  // } = useQuery({
+  //   queryKey: ["conversations", session?.user?.id],
+  //   queryFn: async () => {
+  //     const data = await fetchConversations()
+  //     setConversations(data)
+  //     if (data.length > 0 && !currentConversationId) {
+  //       setCurrentConversationId(data[0].id)
+  //     }
+  //     return data
+  //   },
+  //   enabled: !!session?.user?.id,
+  // })
+
+  // useEffect(() => {
+  //   if (!isScrolled && listRef.current) {
+  //     listRef.current.scrollTo({
+  //       top: listRef.current.scrollHeight,
+  //       behavior: "smooth",
+  //     })
+  //   }
+  // }, [isScrolled, conversations])
 
   useEffect(() => {
-    if (!isScrolled && listRef.current) {
-      listRef.current.scrollTo({
-        top: listRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+    if (!messages.length) {
+      setMessages(defaultMessages)
     }
-  }, [isScrolled, conversations]);
+    if (messages.length <= 1) {
+      setQuickReplies(quickReplies)
+    }
+  }, [setMessages, setQuickReplies, messages])
 
-  if (!isOpen) return null;
+  const onClose = () => {
+    setOpenDialog(false)
+  }
 
-  console.log(conversations);
+  let DialogContent = null
+
+  if (!openDialog) return null
+
+  // if (!userToken || conversation?.status === "Closed")
+  //   DialogContent = <Starter />
+  // else
+  //   DialogContent = (
+  //     <>
+  //       <Messages />
+  //       <QuickReplies />
+  //       <MessageForm />
+  //     </>
+  //   )
+
+  DialogContent = (
+    <>
+      <Messages />
+      <QuickReplies />
+      <MessageForm />
+    </>
+  )
+
   return (
     <div
-      className={`fixed rounded-xl flex flex-col text-black dark:text-white m-4 right-0 bottom-0 max-w-full overflow-hidden transition-all shadow-3xl ${
-        expanded ? "left-0 top-0 z-50" : "w-full sm:max-w-sm h-5/6"
+      className={`fixed rounded-xl flex flex-col border border-border text-black dark:text-white m-4 right-0 bottom-0 max-w-full overflow-hidden transition-all shadow-3xl ${
+        expanded ? "left-0 top-0 z-50" : "w-full sm:max-w-xs top-5"
       }`}
     >
       <Header
@@ -91,33 +154,8 @@ export function Dialog({ isOpen, onClose }: DialogProps) {
         onExpand={handleExpand}
         onClose={onClose}
       />
-      {isLoading ? (
-        <div className="h-full bg-white">
-          <div className="h-full flex items-center justify-center col-sm-6 text-center">
-            <div className="loader1">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-      ) : isError ? (
-        <p>Error: {error.message}</p>
-      ) : conversations?.length > 0 && currentConversationId ? (
-        <MessageList
-          paramKey="conversationId"
-          paramValue={currentConversationId}
-          chatId={currentConversationId}
-          apiUrl={`${import.meta.env.VITE_NEXT_AUTH_API_URL}/api/assistant-messages`}
-          listRef={listRef}
-          onScroll={() => setIsScrolled(true)}
-        />
-      ) : (
-        <WelecomeComponent />
-      )}
-      <MessageForm />
+
+      {DialogContent}
     </div>
-  );
+  )
 }
