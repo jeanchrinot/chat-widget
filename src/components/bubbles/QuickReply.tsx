@@ -8,8 +8,6 @@ import { useStore } from "@/hooks/useStore"
 export function QuickReply({ text }: { text: string }) {
   const { mainBgClassName, mainBgTextColorClassName } = useLayout()
   const { setSelectedQuickReply, setQuickReplies } = useStore()
-  //   const { mutate: initiateChat, data: chatData } = useInitiateChatWidget()
-  //   const { mutate: sendMessage, data: responseData } = useSendMessage()
 
   const handleQuickReply = () => {
     //Create a user message

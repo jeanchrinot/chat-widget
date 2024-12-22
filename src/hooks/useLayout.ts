@@ -10,7 +10,7 @@ export type LayoutStore = {
 
 export const useLayout = create<LayoutStore>((set) => ({
   openDialog: false,
-  mainBgClassName: "bg-gradient-to-br from-pink-500 to-orange-400 text-white",
+  mainBgClassName: "bg-gradient-to-br from-yellow-400 to-orange-500 text-white",
   mainBgTextColorClassName: "text-white",
   setOpenDialog: (status: boolean) => set({ openDialog: status }),
   setMainBgClassName: (className: string) =>

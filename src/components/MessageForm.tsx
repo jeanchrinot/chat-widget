@@ -13,10 +13,10 @@ import {
 } from "@/components/ui/form"
 import { EmojiPicker } from "./Emoji"
 import { useInitiateChatWidget, useSendMessage } from "@/hooks/useChatQuery"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { createUserMessage } from "@/lib/func"
 import { useStore } from "@/hooks/useStore"
-import { useLayout } from "@/hooks/useLayout"
+import { useSocket } from "@/lib/socket-provider"
 
 export function MessageForm() {
   const {
@@ -32,9 +32,12 @@ export function MessageForm() {
     selectedQuickReply,
     setSelectedQuickReply,
     setQuickReplies,
+    widgetSettings,
   } = useStore()
 
   const { mutate: initiateChat, data: chatData } = useInitiateChatWidget()
+
+  const [isLiveChat, setIsLiveChat] = useState(true)
 
   const {
     mutate: sendMessage,
@@ -43,15 +46,61 @@ export function MessageForm() {
     isPending: isSending,
   } = useSendMessage()
 
-  const { mainBgClassName, mainBgTextColorClassName } = useLayout()
+  const { socket, isConnected } = useSocket()
 
-  // Take some actions after conversation status changes
-  // useEffect(()=>{
-  //   if(conversation?.status==="Closed"){
-  //     //Reset sessionId
-  //     setSessionId(null);
-  //   }
-  // },[conversation])
+  useEffect(() => {
+    if (socket && conversation) {
+      // socket.emit("message",message);
+      // socket.emit("message", message, (response) => {
+      //   console.log(response); // "got it"
+      // });
+      // socket.on("message", (msg: any) => {
+      //   console.log("msg", msg)
+      // })
+      // Join the chat room
+      socket.emit("joinRoom", { roomId: conversation.id })
+
+      // Receive a message
+      // socket.on("receiveMessage", (data: any) => {
+      //   console.log("New message:", data.message)
+      //   setMessages([...messages, data.message])
+      // })
+
+      // Receive a message
+      const handleMessage = (data: any) => {
+        console.log("New message:", data.message)
+        setMessages([...messages, data.message])
+      }
+
+      socket.on("receiveMessage", handleMessage)
+
+      // Cleanup function to prevent duplication
+      return () => {
+        socket.off("receiveMessage", handleMessage)
+      }
+    }
+  }, [socket, messages, setMessages, conversation])
+
+  // Resend last unsent message when user token refreshes
+  useEffect(() => {
+    console.log("user token changed")
+    //Resend last message
+    if (messages.length && messages.at(-1)?.status === "sending") {
+      sendMessage(
+        { sessionId, message: messages.at(-1)?.content, token: userToken },
+        {
+          onSuccess: (data) => {
+            console.log("Message sent:", data)
+          },
+          onError: (error) => {
+            console.error("Error sending message:", error)
+          },
+        }
+      )
+    } else {
+      console.log("no message unsent")
+    }
+  }, [userToken])
 
   // Update States After Getting Response From Bot
   useEffect(() => {
@@ -136,25 +185,35 @@ export function MessageForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       console.log("values", values)
-      //Empty quick replies
-      setQuickReplies([])
       //Create a user message
       const userMessage = createUserMessage({
         text: values.content,
         sessionId,
       })
-      setMessages([...messages, userMessage])
-      sendMessage(
-        { sessionId, message: values.content, token: userToken },
-        {
-          onSuccess: (data) => {
-            console.log("Message sent:", data)
-          },
-          onError: (error) => {
-            console.error("Error sending message:", error)
-          },
-        }
-      )
+
+      if (isLiveChat && socket && conversation) {
+        console.log("sending message...")
+        socket.emit("sendMessage", {
+          roomId: conversation.id,
+          message: userMessage,
+        })
+      } else {
+        //Empty quick replies
+        setQuickReplies([])
+
+        setMessages([...messages, userMessage])
+        sendMessage(
+          { sessionId, message: values.content, token: userToken },
+          {
+            onSuccess: (data) => {
+              console.log("Message sent:", data)
+            },
+            onError: (error) => {
+              console.error("Error sending message:", error)
+            },
+          }
+        )
+      }
       form.reset()
     } catch (e) {
       console.error("Error posting message:", e)
@@ -189,7 +248,7 @@ export function MessageForm() {
                   />
                   <div className="flex">
                     <button
-                      className={`inline-flex items-center justify-center text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 whitespace-nowrap disabled:pointer-events-none ${mainBgClassName} ${mainBgTextColorClassName} rounded-full h-[42px] w-[42px] p-0 self-end`}
+                      className={`inline-flex items-center justify-center text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 whitespace-nowrap disabled:pointer-events-none ${widgetSettings?.themeColor?.bg} ${widgetSettings?.themeColor?.text} rounded-full h-[42px] w-[42px] p-0 self-end`}
                       type="submit"
                       aria-label="Send Message"
                       disabled={form.formState.isLoading}

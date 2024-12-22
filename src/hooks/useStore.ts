@@ -6,6 +6,32 @@ export interface TConversation extends Conversation {
   messages: Message[] & { account: Account & { user: User } }[]
 }
 
+interface BotSettings {
+  botName: string
+  botVoice: string
+  primaryLang: string
+}
+
+interface themeColor {
+  bg: string
+  mainColor: string
+  text: string
+  name: string
+}
+
+interface WidgetSettings {
+  enableLiveChat: boolean | number
+  inQMessage: string
+  offlineMessage: string
+  onlineStatus: string
+  offlineStatus: string
+  buttonImage: string
+  buttonText: string
+  avatar: string
+  greetingMessage: string
+  themeColor: themeColor
+}
+
 export type Store = {
   channelId: string | null
   sessionId: string | null
@@ -16,6 +42,8 @@ export type Store = {
   currentConversationId: string | null
   quickReplies: string[]
   selectedQuickReply: string | null
+  botSettings: BotSettings | null
+  widgetSettings: WidgetSettings | null
   setChannelId: (id: string | null) => void
   setSessionId: (id: string | null) => void
   setUserToken: (token: string | null) => void
@@ -25,6 +53,8 @@ export type Store = {
   setCurrentConversationId: (id: string | null) => void
   setQuickReplies: (quickReplies: string[]) => void
   setSelectedQuickReply: (quickReply: string) => void
+  setBotSettings: (botSettings: BotSettings) => void
+  setWidgetSettings: (widgetSettings: WidgetSettings) => void
 }
 
 export const useStore = create<Store>()(
@@ -39,6 +69,8 @@ export const useStore = create<Store>()(
       currentConversationId: null,
       quickReplies: [],
       selectedQuickReply: null,
+      botSettings: null,
+      widgetSettings: null,
       setChannelId: (id: string | null) => set({ channelId: id }),
       setUserToken: (token: string | null) => set({ userToken: token }),
       setSessionId: (id: string | null) => set({ sessionId: id }),
@@ -51,6 +83,9 @@ export const useStore = create<Store>()(
       setQuickReplies: (quickReplies: string[]) => set({ quickReplies }),
       setSelectedQuickReply: (quickReply: string) =>
         set({ selectedQuickReply: quickReply }),
+      setBotSettings: (botSettings: BotSettings) => set({ botSettings }),
+      setWidgetSettings: (widgetSettings: WidgetSettings) =>
+        set({ widgetSettings }),
     }),
     {
       name: "chat-store", // Key in localStorage

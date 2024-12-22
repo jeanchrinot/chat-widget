@@ -1,0 +1,92 @@
+export const themeColors = [
+  {
+    bg: "bg-gradient-to-br from-pink-500 to-orange-400",
+    mainColor: "pink-500",
+    text: "text-white",
+    name: "Pink-Orange",
+  },
+  {
+    bg: "bg-gradient-to-br from-blue-500 to-purple-500",
+    mainColor: "blue-500",
+    text: "text-white",
+    name: "Blue-Purple",
+  },
+  {
+    bg: "bg-gradient-to-br from-green-400 to-green-600",
+    mainColor: "green-500",
+    text: "text-white",
+    name: "Green",
+  },
+  {
+    bg: "bg-gradient-to-br from-yellow-400 to-orange-500",
+    mainColor: "yellow-400",
+    text: "text-black",
+    name: "Yellow-Orange",
+  },
+  {
+    bg: "bg-gradient-to-br from-gray-700 to-gray-900",
+    mainColor: "gray-700",
+    text: "text-white",
+    name: "Black (Dark Gray)",
+  },
+  {
+    bg: "bg-gradient-to-br from-indigo-500 to-blue-500",
+    mainColor: "indigo-500",
+    text: "text-white",
+    name: "Indigo-Blue",
+  },
+  {
+    bg: "bg-gradient-to-br from-red-500 to-pink-500",
+    mainColor: "red-500",
+    text: "text-white",
+    name: "Red-Pink",
+  },
+  {
+    bg: "bg-gradient-to-br from-teal-400 to-cyan-600",
+    mainColor: "teal-400",
+    text: "text-white",
+    name: "Teal-Cyan",
+  },
+  {
+    bg: "bg-gradient-to-br from-amber-600 to-yellow-400",
+    mainColor: "amber-600",
+    text: "text-black",
+    name: "Amber-Yellow",
+  },
+  {
+    bg: "bg-gradient-to-br from-purple-400 to-pink-500",
+    mainColor: "purple-500",
+    text: "text-white",
+    name: "Purple-Pink",
+  },
+  {
+    bg: "bg-gradient-to-br from-lime-400 to-green-500",
+    mainColor: "lime-400",
+    text: "text-black",
+    name: "Lime-Green",
+  },
+  {
+    bg: "bg-gradient-to-br from-blue-400 to-sky-500",
+    mainColor: "blue-400",
+    text: "text-white",
+    name: "Blue-Sky Blue",
+  },
+  {
+    bg: "bg-gradient-to-br from-rose-400 to-red-500",
+    mainColor: "rose-400",
+    text: "text-white",
+    name: "Rose-Red",
+  },
+  {
+    bg: "bg-gradient-to-br from-gray-300 to-gray-500",
+    mainColor: "gray-300",
+    text: "text-black",
+    name: "Light Gray-Dark Gray",
+  },
+  {
+    bg: "bg-gradient-to-br from-fuchsia-500 to-purple-600",
+    mainColor: "fuchsia-500",
+    text: "text-white",
+    name: "Fuchsia-Purple",
+  },
+]

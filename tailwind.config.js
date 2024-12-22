@@ -1,7 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+import { themeColors } from "./src/lib/data"
+
+const safelistClasses = themeColors.flatMap(({ bg, text, mainColor }) => [
+  bg,
+  text,
+  "border-" + mainColor,
+])
+
 module.exports = {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  safeList: safelistClasses,
   theme: {
     container: {
       center: true,
@@ -68,4 +77,4 @@ module.exports = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-};
+}

@@ -1,20 +1,13 @@
-import axios from "axios"
-import { useQuery } from "@tanstack/react-query"
 import { useState, useEffect, useRef, useCallback } from "react"
 
 // Local imports
 import { Header } from "./Header"
 import { MessageForm } from "./MessageForm"
-// import { MessageList } from "./MessageList"
-import { useSession } from "@/hooks/useSession"
-// import WelecomeComponent from "./WelecomeComponent"
-import { useZustandStore } from "@/hooks/useZustandStore"
 import { useLayout } from "@/hooks/useLayout"
 import Messages from "./Messages"
 import { useStore } from "@/hooks/useStore"
 import { ParticipantType } from "@prisma/client"
 import QuickReplies from "./QuickReplies"
-import Starter from "./Starter"
 
 interface DialogProps {
   infoMessage: React.ReactNode
@@ -23,22 +16,22 @@ interface DialogProps {
   welcomeMessage: string
   onClose: () => void
 }
+const greetingMessage = {
+  id: "67547fc747c22f0528c108eb",
+  content:
+    "Hey! 👋🏾 I'm Chelsea, your virtual assistant. How can I help you today?",
+  attachments: null,
+  sessionId: "b39f8a7e-dc34-402d-8d07-31c64c8bd919",
+  senderId: "674af8cd4da47e3d26cd66be",
+  senderType: ParticipantType.Bot,
+  conversationId: "67547e7247c22f0528c108d4",
+  deleted: false,
+  status: "sent",
+  createdAt: "2024-12-07T17:03:03.293Z",
+  updatedAt: "2024-12-07T17:03:03.293Z",
+}
 
-const defaultMessages = [
-  {
-    id: "67547fc747c22f0528c108eb",
-    content:
-      "Hey! 👋🏾 I'm Chelsea, your virtual assistant. How can I help you today?",
-    attachments: null,
-    sessionId: "b39f8a7e-dc34-402d-8d07-31c64c8bd919",
-    senderId: "674af8cd4da47e3d26cd66be",
-    senderType: ParticipantType.Bot,
-    conversationId: "67547e7247c22f0528c108d4",
-    deleted: false,
-    createdAt: "2024-12-07T17:03:03.293Z",
-    updatedAt: "2024-12-07T17:03:03.293Z",
-  },
-]
+const defaultMessages = [greetingMessage]
 
 const quickReplies = [
   "I want to get a free e-book.",
@@ -47,8 +40,7 @@ const quickReplies = [
 
 export function Dialog() {
   // const { session } = useSession()
-  const { userToken, conversation, messages, setMessages, setQuickReplies } =
-    useStore()
+  const { messages, setMessages, setQuickReplies, widgetSettings } = useStore()
   const { openDialog, setOpenDialog } = useLayout()
   const [expanded, setExpanded] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -107,13 +99,17 @@ export function Dialog() {
   // }, [isScrolled, conversations])
 
   useEffect(() => {
-    if (!messages.length) {
-      setMessages(defaultMessages)
+    if (!messages.length && widgetSettings?.greetingMessage) {
+      const greetingMsg = {
+        ...greetingMessage,
+        content: widgetSettings.greetingMessage,
+      }
+      setMessages([greetingMsg])
     }
-    if (messages.length <= 1) {
-      setQuickReplies(quickReplies)
-    }
-  }, [setMessages, setQuickReplies, messages])
+    // if (messages.length <= 1) {
+    //   setQuickReplies(quickReplies)
+    // }
+  }, [setMessages, setQuickReplies, messages, widgetSettings])
 
   const onClose = () => {
     setOpenDialog(false)

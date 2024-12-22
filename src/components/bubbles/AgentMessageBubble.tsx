@@ -7,7 +7,7 @@ import { Message } from "@prisma/client"
 import { useStore } from "@/hooks/useStore"
 import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
 
-export function BotMessageBubble({
+export function AgentMessageBubble({
   message,
 }: {
   message: Message
@@ -15,15 +15,10 @@ export function BotMessageBubble({
   const { widgetSettings } = useStore()
   return (
     <div className="flex my-2 space-x-2">
-      <UserAvatar
-        src={`${assetBaseUrl}${widgetSettings?.avatar || defaultAvatar}`}
-        alt="bot"
-        name="Bot"
-        customClass="w-8 h-8"
-      />
+      <UserAvatar src="" alt="agent" name="Agent" customClass="w-8 h-8" />
       <div className={`flex flex-col items-start`}>
         <div
-          className={`relative flex max-w-xs whitespace-pre-wrap bg-slate-200 py-2 px-2 rounded-b-2xl rounded-tr-2xl mr-9`}
+          className={`relative min-w-16 flex max-w-xs whitespace-pre-wrap bg-slate-200 py-2 px-2 rounded-b-2xl rounded-tr-2xl mr-9`}
         >
           <p className="text-xs font-normal text-gray-700 mb-2">
             {message?.content}

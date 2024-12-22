@@ -1,4 +1,6 @@
 import { useLayout } from "@/hooks/useLayout"
+import { useStore } from "@/hooks/useStore"
+import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
 import { Minus } from "lucide-react"
 import { UserAvatar } from "./Avatar"
 
@@ -14,16 +16,17 @@ interface HeaderProps {
 }
 
 export function Header({ onExpand, expanded, onClose }: HeaderProps) {
-  const { mainBgClassName } = useLayout()
+  // const { mainBgClassName } = useLayout()
+  const { widgetSettings, botSettings } = useStore()
   return (
     <div
-      className={`flex ${mainBgClassName} justify-between px-2 py-2 space-x-2 `}
+      className={`flex ${widgetSettings?.themeColor?.bg} ${widgetSettings?.themeColor?.text} justify-between px-2 py-2 space-x-2 `}
     >
       {/* <MenuDrawer /> */}
       <div className="flex flex-row">
         <div className="relative">
           <UserAvatar
-            src="https://t3.ftcdn.net/jpg/06/93/16/82/240_F_693168257_5h7lep6mj5wHPcR9AdXurZwf5TORoj5R.jpg"
+            src={`${assetBaseUrl}${widgetSettings?.avatar || defaultAvatar}`}
             alt="Avatar"
             name="Bot"
             customClass="w-10 h-10"
@@ -35,13 +38,13 @@ export function Header({ onExpand, expanded, onClose }: HeaderProps) {
         </div>
         <div className="flex flex-col ml-3 justify-center">
           <span className="text-sm font-bold" style={{ marginTop: "10px" }}>
-            Chelsea
+            {botSettings?.botName || "AI Bot"}
           </span>
           <span
-            className="text-xs text-slate-100"
+            className={`text-xs ${widgetSettings?.themeColor?.text}`}
             style={{ marginTop: "-3px" }}
           >
-            online
+            {widgetSettings?.onlineStatus || "online"}
           </span>
         </div>
       </div>
