@@ -3,10 +3,16 @@ import apiClient from "@/lib/api-client"
 
 interface InitiateChatWidgetProps {
   channelId: string | null
+  userId: string | null
+}
+
+interface GetConversationProps {
+  channelId: string | null
+  userId: string | null
+  token: string | null
 }
 
 interface GetWidgetSettingsProps {
-  channelId: string | null
   token: string | null
 }
 
@@ -18,10 +24,28 @@ interface SendMessageProps {
 
 export const useInitiateChatWidget = () => {
   return useMutation({
-    mutationFn: async ({ channelId }: InitiateChatWidgetProps) => {
+    mutationFn: async ({ channelId, userId }: InitiateChatWidgetProps) => {
       const response = await apiClient.post("/api/chat/widget/initiate", {
         channelId,
+        userId,
       })
+      return response.data
+    },
+  })
+}
+
+export const useGetWidgetConversation = () => {
+  return useMutation({
+    mutationFn: async ({ channelId, userId, token }: GetConversationProps) => {
+      const response = await apiClient.post(
+        "/api/chat/widget/conversation",
+        { channelId, userId, token },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
       return response.data
     },
   })

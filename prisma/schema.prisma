@@ -38,6 +38,8 @@ model User {
   variables Variable[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+    //Live chat
+  transfers Transfer[]
 }
 
 model Account {
@@ -255,9 +257,26 @@ model Conversation {
   channelId String   @db.ObjectId
   channel   Channel  @relation(fields: [channelId], references: [id])
   sessionId String // last or current chat session id
+    //Transfer To Operator Fields
+  transfers Transfer[]
   //Time stmps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+//Transfer to operator
+model Transfer {
+  id String  @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String @db.ObjectId
+  conversation Conversation @relation(fields: [conversationId],references: [id])
+  sessionId String
+  status ConversationStatus @default(Pending)
+  agentId String? @db.ObjectId
+  agent User? @relation(fields: [agentId],references: [id])
+  //Time stmps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  joinedAt DateTime?
 }
 
 enum ParticipantType {

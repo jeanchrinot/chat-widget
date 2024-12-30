@@ -1,4 +1,3 @@
-import { useLayout } from "@/hooks/useLayout"
 import { useStore } from "@/hooks/useStore"
 import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
 import { Minus } from "lucide-react"
@@ -17,7 +16,9 @@ interface HeaderProps {
 
 export function Header({ onExpand, expanded, onClose }: HeaderProps) {
   // const { mainBgClassName } = useLayout()
-  const { widgetSettings, botSettings } = useStore()
+  const { widgetSettings, botSettings, agent } = useStore()
+
+  console.log("agent", agent)
   return (
     <div
       className={`flex ${widgetSettings?.themeColor?.bg} ${widgetSettings?.themeColor?.text} justify-between px-2 py-2 space-x-2 `}
@@ -26,9 +27,9 @@ export function Header({ onExpand, expanded, onClose }: HeaderProps) {
       <div className="flex flex-row">
         <div className="relative">
           <UserAvatar
-            src={`${assetBaseUrl}${widgetSettings?.avatar || defaultAvatar}`}
+            src={`${assetBaseUrl}${agent?.image || (agent?.agentType == "Bot" ? defaultAvatar : "")}`}
             alt="Avatar"
-            name="Bot"
+            name={agent?.name || "Agent"}
             customClass="w-10 h-10"
           />
           <span
@@ -38,7 +39,7 @@ export function Header({ onExpand, expanded, onClose }: HeaderProps) {
         </div>
         <div className="flex flex-col ml-3 justify-center">
           <span className="text-sm font-bold" style={{ marginTop: "10px" }}>
-            {botSettings?.botName || "AI Bot"}
+            {agent?.name || "AI Bot"}
           </span>
           <span
             className={`text-xs ${widgetSettings?.themeColor?.text}`}

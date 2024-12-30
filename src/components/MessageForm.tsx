@@ -23,21 +23,28 @@ export function MessageForm() {
     channelId,
     sessionId,
     setSessionId,
+    user,
+    setUser,
+    agent,
+    botAgent,
+    setAgent,
     userToken,
     setUserToken,
     conversation,
+    transfer,
     setConversation,
+    setTransfer,
     messages,
     setMessages,
     selectedQuickReply,
     setSelectedQuickReply,
     setQuickReplies,
     widgetSettings,
+    startNewSession,
+    setStartNewSession,
   } = useStore()
 
   const { mutate: initiateChat, data: chatData } = useInitiateChatWidget()
-
-  const [isLiveChat, setIsLiveChat] = useState(true)
 
   const {
     mutate: sendMessage,
@@ -48,38 +55,65 @@ export function MessageForm() {
 
   const { socket, isConnected } = useSocket()
 
+  console.log("isConnected", isConnected)
+
   useEffect(() => {
-    if (socket && conversation) {
-      // socket.emit("message",message);
-      // socket.emit("message", message, (response) => {
-      //   console.log(response); // "got it"
-      // });
-      // socket.on("message", (msg: any) => {
-      //   console.log("msg", msg)
-      // })
-      // Join the chat room
-      socket.emit("joinRoom", { roomId: conversation.id })
+    if (socket && conversation && user && transfer) {
+      if (transfer.status == "Pending" || transfer.status == "Active") {
+        // Join the chat room
+        socket.emit("joinRoom", {
+          roomId: conversation.id,
+          userId: user.id,
+          userType: "User",
+        })
 
-      // Receive a message
-      // socket.on("receiveMessage", (data: any) => {
-      //   console.log("New message:", data.message)
-      //   setMessages([...messages, data.message])
-      // })
+        // Receive a message
+        const handleAgentJoined = (data: any) => {
+          console.log("Agent:", data.agent)
+          if (data.agent) {
+            setAgent(data.agent)
+          }
+        }
 
-      // Receive a message
-      const handleMessage = (data: any) => {
-        console.log("New message:", data.message)
-        setMessages([...messages, data.message])
-      }
+        socket.on("agentJoined", handleAgentJoined)
 
-      socket.on("receiveMessage", handleMessage)
+        // Receive a message
+        const handleMessage = (data: any) => {
+          console.log("New message:", data.message)
+          setMessages([...messages, data.message])
+          if (conversation.status == "Pending") {
+            setConversation({ ...conversation, status: "Active" })
+          }
+        }
 
-      // Cleanup function to prevent duplication
-      return () => {
-        socket.off("receiveMessage", handleMessage)
+        socket.on("receiveMessage", handleMessage)
+
+        // Disconnect chat
+        const handleChatClosed = (data: any) => {
+          // socket.off("chatClosed", handleChatClosed) // Remove listener
+          // socket.off("receiveMessage", handleMessage)
+          // socket.disconnect() // Disconnect socket
+          setConversation({ ...conversation, status: "Closed" })
+          setTransfer({ ...transfer, status: "Closed" })
+          //Update Agent Info
+          if (botAgent) {
+            setAgent(botAgent)
+          }
+          console.log("conv set...")
+        }
+
+        socket.on("chatClosed", handleChatClosed)
+
+        // Cleanup function to prevent duplication
+        return () => {
+          socket.off("receiveMessage", handleMessage)
+          socket.off("chatClosed", handleChatClosed)
+        }
       }
     }
-  }, [socket, messages, setMessages, conversation])
+  }, [socket, messages, setMessages, conversation, user, transfer, botAgent])
+
+  console.log("transfer", transfer)
 
   // Resend last unsent message when user token refreshes
   useEffect(() => {
@@ -108,6 +142,7 @@ export function MessageForm() {
 
     if (responseData && responseData.response) {
       setConversation(responseData.response.conversation)
+      setTransfer(responseData.response.transfer)
       setMessages([
         ...messages.slice(0, -1),
         responseData.response.userMessage,
@@ -116,6 +151,9 @@ export function MessageForm() {
       setSessionId(responseData.response.sessionId)
       setSelectedQuickReply("")
       setQuickReplies([])
+      if (responseData.response.conversation.status == "Pending") {
+        setStartNewSession(false)
+      }
     }
   }, [responseData, setMessages])
 
@@ -127,11 +165,12 @@ export function MessageForm() {
       console.log("Refresh token needed.")
       if (channelId) {
         initiateChat(
-          { channelId },
+          { channelId, userId: user?.id || null },
           {
             onSuccess: (data: any) => {
               console.log("Chat Reinitiated:", data)
               setUserToken(data.token)
+              setUser(data.user)
             },
             onError: (error: any) => {
               console.error("Error initiating chat:", error)
@@ -146,11 +185,13 @@ export function MessageForm() {
 
   //Handle quick reply
   useEffect(() => {
-    if (selectedQuickReply) {
+    if (selectedQuickReply && user && conversation) {
       //Create a user message
       const userMessage = createUserMessage({
         text: selectedQuickReply,
         sessionId,
+        userId: user?.id,
+        conversationId: conversation?.id,
       })
       setMessages([...messages, userMessage])
       sendMessage(
@@ -183,40 +224,44 @@ export function MessageForm() {
 
   // Handle Message Input Submit
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      console.log("values", values)
-      //Create a user message
-      const userMessage = createUserMessage({
-        text: values.content,
-        sessionId,
-      })
-
-      if (isLiveChat && socket && conversation) {
-        console.log("sending message...")
-        socket.emit("sendMessage", {
-          roomId: conversation.id,
-          message: userMessage,
+    if (user && conversation && conversation.status != "Pending") {
+      try {
+        console.log("values", values)
+        //Create a user message
+        const userMessage = createUserMessage({
+          text: values.content,
+          sessionId,
+          userId: user?.id,
+          conversationId: conversation?.id,
         })
-      } else {
-        //Empty quick replies
-        setQuickReplies([])
 
-        setMessages([...messages, userMessage])
-        sendMessage(
-          { sessionId, message: values.content, token: userToken },
-          {
-            onSuccess: (data) => {
-              console.log("Message sent:", data)
-            },
-            onError: (error) => {
-              console.error("Error sending message:", error)
-            },
-          }
-        )
+        if (transfer?.status == "Active" && socket && conversation) {
+          console.log("sending message...")
+          socket.emit("sendMessage", {
+            roomId: conversation.id,
+            message: userMessage,
+          })
+        } else {
+          //Empty quick replies
+          setQuickReplies([])
+
+          setMessages([...messages, userMessage])
+          sendMessage(
+            { sessionId, message: values.content, token: userToken },
+            {
+              onSuccess: (data) => {
+                console.log("Message sent:", data)
+              },
+              onError: (error) => {
+                console.error("Error sending message:", error)
+              },
+            }
+          )
+        }
+        form.reset()
+      } catch (e) {
+        console.error("Error posting message:", e)
       }
-      form.reset()
-    } catch (e) {
-      console.error("Error posting message:", e)
     }
   }
 
@@ -243,7 +288,10 @@ export function MessageForm() {
                   <Input
                     {...field}
                     placeholder="Type something..."
-                    disabled={isSending}
+                    disabled={
+                      isSending ||
+                      (conversation?.status != "Active" && !startNewSession)
+                    }
                     className="bg-transparent resize-none w-full border border-gray-300 outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus:ring-offset-0 rounded-full px-3 flex-1 no-scrollbar"
                   />
                   <div className="flex">
@@ -251,7 +299,10 @@ export function MessageForm() {
                       className={`inline-flex items-center justify-center text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 whitespace-nowrap disabled:pointer-events-none ${widgetSettings?.themeColor?.bg} ${widgetSettings?.themeColor?.text} rounded-full h-[42px] w-[42px] p-0 self-end`}
                       type="submit"
                       aria-label="Send Message"
-                      disabled={form.formState.isLoading}
+                      disabled={
+                        isSending ||
+                        (conversation?.status != "Active" && !startNewSession)
+                      }
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

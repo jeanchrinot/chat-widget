@@ -8,18 +8,22 @@ export const createObjectId = () => {
 export const createUserMessage = ({
   text,
   sessionId,
+  userId,
+  conversationId,
 }: {
   text: string | null
   sessionId: string | null
+  userId: string | null
+  conversationId: string | null
 }) => {
   const userMessage = {
     id: createObjectId(),
     content: text,
     attachments: null,
     sessionId,
-    senderId: null,
+    senderId: userId,
     senderType: ParticipantType.User,
-    conversationId: null,
+    conversationId: conversationId,
     deleted: false,
     status: "sending",
     createdAt: new Date(),

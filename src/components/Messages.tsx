@@ -1,9 +1,10 @@
 import { useStore } from "@/hooks/useStore"
+import { RotateCcw } from "lucide-react"
 import { ElementRef, Fragment, useEffect, useRef } from "react"
 import { MessageBubble } from "./bubbles/MessageBubble"
 
 const Messages = () => {
-  const { messages, conversation } = useStore()
+  const { messages, conversation, setStartNewSession } = useStore()
   const chatRef = useRef<ElementRef<"div">>(null)
 
   useEffect(() => {
@@ -36,9 +37,18 @@ const Messages = () => {
       </div>
       <div>
         {conversation?.status === "Closed" ? (
-          <p className="text-sm text-center text-pink-500 italic mb-4">
-            This chat session has ended.
-          </p>
+          <div className="flex flex-col justify-center">
+            <p className="text-sm text-center text-pink-500 italic mb-4">
+              This chat session has ended.
+            </p>
+            <button
+              onClick={() => setStartNewSession(true)}
+              className="flex items-center justify-center mb-4 text-green-500"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Start New Session
+            </button>
+          </div>
         ) : (
           ""
         )}

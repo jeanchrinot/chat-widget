@@ -14,12 +14,20 @@ const TriggerButton = () => {
 
   const {
     channelId,
+    user,
     userToken,
     botSettings,
     widgetSettings,
     setUserToken,
+    setUser,
     setBotSettings,
     setWidgetSettings,
+    setConversation,
+    setTransfer,
+    setMessages,
+    setSessionId,
+    setAgent,
+    setBotAgent,
   } = useStore()
 
   const {
@@ -38,19 +46,15 @@ const TriggerButton = () => {
     setOpenDialog(true)
   }
 
-  // useEffect(() => {
-  //   console.log("socket", socket)
-  //   console.log("isConnected", isConnected)
-  // }, [socket, isConnected])
-
   useEffect(() => {
     if (channelId && !userToken) {
       initiateChat(
-        { channelId },
+        { channelId, userId: null },
         {
           onSuccess: (data) => {
             console.log("Chat initiated:", data)
             setUserToken(data.token)
+            setUser(data.user)
           },
           onError: (error) => {
             console.error("Error initiating chat:", error)
@@ -61,18 +65,30 @@ const TriggerButton = () => {
   }, [initiateChat, channelId])
 
   useEffect(() => {
-    if (userToken && channelId) {
+    if (userToken) {
       getChatWidget(
-        { channelId, token: userToken },
+        { token: userToken },
         {
           onSuccess: (data) => {
             console.log("Widget data loaded:", data)
+            let botSettings = null
+            let widgetSettings = null
+            let agent: any = { id: "bot", agentType: "Bot" }
             if (data?.botSettings) {
-              setBotSettings(JSON.parse(data.botSettings))
+              botSettings = JSON.parse(data.botSettings)
+              agent = { ...agent, name: botSettings.botName }
+              setBotSettings(botSettings)
             }
             if (data?.widgetSettings) {
-              setWidgetSettings(JSON.parse(data.widgetSettings))
+              widgetSettings = JSON.parse(data.widgetSettings)
+              setWidgetSettings(widgetSettings)
+              agent = { ...agent, image: widgetSettings.avatar }
+              setAgent(agent)
+              setBotAgent(agent)
             }
+            setConversation(data.conversation)
+            setTransfer(data.transfer)
+            setSessionId(data.conversation?.sessionId)
           },
           onError: (error) => {
             console.error("Error getting widget data:", error)
@@ -80,7 +96,7 @@ const TriggerButton = () => {
         }
       )
     }
-  }, [userToken, channelId])
+  }, [userToken])
 
   if (isInitiateChatPending || isWidgetDataPending) return ""
 
