@@ -1,6 +1,12 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { Conversation, User, Message, Account, Transfer } from "@prisma/client"
+import type {
+  Conversation,
+  User,
+  Message,
+  Account,
+  Transfer,
+} from "@prisma/client"
 
 export interface TConversation extends Conversation {
   messages: Message[] & { account: Account & { user: User } }[]
@@ -56,6 +62,7 @@ export type Store = {
   widgetSettings: WidgetSettings | null
   transfer: Transfer | null
   startNewSession: boolean
+  testKey: string | null
   setChannelId: (id: string | null) => void
   setSessionId: (id: string | null) => void
   setUserToken: (token: string | null) => void
@@ -72,12 +79,13 @@ export type Store = {
   setWidgetSettings: (widgetSettings: WidgetSettings) => void
   setTransfer: (transfer: Transfer) => void
   setStartNewSession: (bool: boolean) => void
+  setTestKey: (key: string) => void
 }
 
 export const useStore = create<Store>()(
   persist(
     (set) => ({
-      channelId: "674b4c35b0a96b112bfe8329",
+      channelId: "",
       sessionId: null,
       user: null,
       agent: null,
@@ -93,6 +101,7 @@ export const useStore = create<Store>()(
       widgetSettings: null,
       transfer: null,
       startNewSession: false,
+      testKey: null,
       setChannelId: (id: string | null) => set({ channelId: id }),
       setUserToken: (token: string | null) => set({ userToken: token }),
       setSessionId: (id: string | null) => set({ sessionId: id }),
@@ -113,6 +122,7 @@ export const useStore = create<Store>()(
         set({ widgetSettings }),
       setTransfer: (transfer: Transfer) => set({ transfer }),
       setStartNewSession: (bool: boolean) => set({ startNewSession: bool }),
+      setTestKey: (key: string) => set({ testKey: key }),
     }),
     {
       name: "chat-store", // Key in localStorage

@@ -20,9 +20,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
-    const socketInstance = new (ClientIO as any)(
-      import.meta.env.VITE_NEXT_API_URL!
-    )
+    const socketInstance = new (ClientIO as any)(process.env.VITE_NEXT_API_URL!)
 
     socketInstance.on("connect", () => {
       setIsConnected(true)

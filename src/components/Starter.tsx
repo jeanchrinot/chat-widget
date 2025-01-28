@@ -1,29 +1,28 @@
-import { useInitiateChatWidget } from "@/hooks/useChatQuery"
+// import { useInitiateChatWidget } from "@/hooks/useChatQuery"
 import { useLayout } from "@/hooks/useLayout"
 import { useStore } from "@/hooks/useStore"
 import { Button } from "./ui/button"
 
 const Starter = () => {
   const { mainBgClassName, mainBgTextColorClassName } = useLayout()
-  const { channelId, conversation, userToken, setUserToken, setSessionId } =
-    useStore()
-  const { mutate: initiateChat } = useInitiateChatWidget()
+  const { conversation, userToken } = useStore()
+  // const { mutate: initiateChat } = useInitiateChatWidget()
 
   const handleStartChat = () => {
-    if (channelId) {
-      initiateChat(
-        { channelId },
-        {
-          onSuccess: (data) => {
-            console.log("Chat initiated:", data)
-            setUserToken(data.token)
-          },
-          onError: (error) => {
-            console.error("Error initiating chat:", error)
-          },
-        }
-      )
-    }
+    // if (channelId) {
+    //   initiateChat(
+    //     { channelId },
+    //     {
+    //       onSuccess: (data) => {
+    //         console.log("Chat initiated:", data)
+    //         setUserToken(data.token)
+    //       },
+    //       onError: (error) => {
+    //         console.error("Error initiating chat:", error)
+    //       },
+    //     }
+    //   )
+    // }
   }
 
   let starterText = null

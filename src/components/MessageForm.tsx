@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form"
 import { EmojiPicker } from "./Emoji"
 import { useInitiateChatWidget, useSendMessage } from "@/hooks/useChatQuery"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { createUserMessage } from "@/lib/func"
 import { useStore } from "@/hooks/useStore"
 import { useSocket } from "@/lib/socket-provider"
@@ -25,7 +25,6 @@ export function MessageForm() {
     setSessionId,
     user,
     setUser,
-    agent,
     botAgent,
     setAgent,
     userToken,
@@ -42,9 +41,10 @@ export function MessageForm() {
     widgetSettings,
     startNewSession,
     setStartNewSession,
+    testKey,
   } = useStore()
 
-  const { mutate: initiateChat, data: chatData } = useInitiateChatWidget()
+  const { mutate: initiateChat } = useInitiateChatWidget()
 
   const {
     mutate: sendMessage,
@@ -89,10 +89,7 @@ export function MessageForm() {
         socket.on("receiveMessage", handleMessage)
 
         // Disconnect chat
-        const handleChatClosed = (data: any) => {
-          // socket.off("chatClosed", handleChatClosed) // Remove listener
-          // socket.off("receiveMessage", handleMessage)
-          // socket.disconnect() // Disconnect socket
+        const handleChatClosed = () => {
           setConversation({ ...conversation, status: "Closed" })
           setTransfer({ ...transfer, status: "Closed" })
           //Update Agent Info
@@ -115,13 +112,24 @@ export function MessageForm() {
 
   console.log("transfer", transfer)
 
+  console.log("agent", botAgent)
+
   // Resend last unsent message when user token refreshes
   useEffect(() => {
     console.log("user token changed")
     //Resend last message
     if (messages.length && messages.at(-1)?.status === "sending") {
+      let messageValue: string | null = null
+
+      if (messages.length) {
+        const lastMessage = messages.at(-1)
+        if (lastMessage?.content) {
+          messageValue = lastMessage.content
+        }
+      }
+
       sendMessage(
-        { sessionId, message: messages.at(-1)?.content, token: userToken },
+        { sessionId, message: messageValue, token: userToken, testKey },
         {
           onSuccess: (data) => {
             console.log("Message sent:", data)
@@ -160,8 +168,8 @@ export function MessageForm() {
   // Message Error Handling
   // Reinitialize chat widget. i.e. Refresh user token
   useEffect(() => {
-    console.log("messageError", messageError?.status)
-    if (messageError?.status === 401) {
+    const error = messageError as Error & { status?: number }
+    if (error?.status === 401) {
       console.log("Refresh token needed.")
       if (channelId) {
         initiateChat(
@@ -189,13 +197,18 @@ export function MessageForm() {
       //Create a user message
       const userMessage = createUserMessage({
         text: selectedQuickReply,
-        sessionId,
-        userId: user?.id,
+        sessionId: sessionId || "",
+        userId: user?.id || "",
         conversationId: conversation?.id,
       })
       setMessages([...messages, userMessage])
       sendMessage(
-        { sessionId, message: selectedQuickReply, token: userToken },
+        {
+          sessionId,
+          message: selectedQuickReply,
+          token: userToken,
+          testKey,
+        },
         {
           onSuccess: (data) => {
             console.log("Message sent:", data)
@@ -224,15 +237,18 @@ export function MessageForm() {
 
   // Handle Message Input Submit
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (user && conversation && conversation.status != "Pending") {
+    if (
+      user &&
+      ((conversation && conversation.status != "Pending") || !conversation)
+    ) {
       try {
         console.log("values", values)
         //Create a user message
         const userMessage = createUserMessage({
           text: values.content,
-          sessionId,
-          userId: user?.id,
-          conversationId: conversation?.id,
+          sessionId: sessionId || "",
+          userId: user?.id || "",
+          conversationId: conversation?.id || "",
         })
 
         if (transfer?.status == "Active" && socket && conversation) {
@@ -247,7 +263,12 @@ export function MessageForm() {
 
           setMessages([...messages, userMessage])
           sendMessage(
-            { sessionId, message: values.content, token: userToken },
+            {
+              sessionId,
+              message: values.content,
+              token: userToken,
+              testKey,
+            },
             {
               onSuccess: (data) => {
                 console.log("Message sent:", data)
@@ -269,7 +290,7 @@ export function MessageForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex items-center px-4 pb-2 pt-1 bg-white border-t border-neutral-200 dark:border-neutral-800"
+        className="flex items-center px-4 pb-2 pt-1 bg-white border-t border-neutral-200"
       >
         <FormField
           control={form.control}
@@ -290,7 +311,9 @@ export function MessageForm() {
                     placeholder="Type something..."
                     disabled={
                       isSending ||
-                      (conversation?.status != "Active" && !startNewSession)
+                      (conversation != null &&
+                        conversation?.status != "Active" &&
+                        !startNewSession)
                     }
                     className="bg-transparent resize-none w-full border border-gray-300 outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus:ring-offset-0 rounded-full px-3 flex-1 no-scrollbar"
                   />
@@ -301,7 +324,9 @@ export function MessageForm() {
                       aria-label="Send Message"
                       disabled={
                         isSending ||
-                        (conversation?.status != "Active" && !startNewSession)
+                        (conversation != null &&
+                          conversation?.status != "Active" &&
+                          !startNewSession)
                       }
                     >
                       <svg

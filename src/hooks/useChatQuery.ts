@@ -20,6 +20,7 @@ interface SendMessageProps {
   sessionId: string | null
   message: string | null
   token: string | null
+  testKey: string | null
 }
 
 export const useInitiateChatWidget = () => {
@@ -66,17 +67,31 @@ export const useGetWidgetSettings = () => {
 
 export const useSendMessage = () => {
   return useMutation({
-    mutationFn: async ({ sessionId, message, token }: SendMessageProps) => {
-      const response = await apiClient.post(
-        "/api/chat/widget/message",
-        { sessionId, message },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      return response.data
+    mutationFn: async ({
+      sessionId,
+      message,
+      token,
+      testKey,
+    }: SendMessageProps) => {
+      try {
+        const response = await apiClient.post(
+          "/api/chat/widget/message",
+          { sessionId, message, testKey },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        return response.data // Return the data for successful requests
+      } catch (error: any) {
+        // Handle errors and extend the error object with a status property
+        const customError = new Error(
+          error.response?.data?.message || "An error occurred"
+        ) as Error & { status?: number }
+        customError.status = error.response?.status // Attach the status code
+        throw customError
+      }
     },
   })
 }

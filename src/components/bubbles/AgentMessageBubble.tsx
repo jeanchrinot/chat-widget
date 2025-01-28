@@ -3,16 +3,13 @@ import { format } from "date-fns"
 // local imports
 import { UserAvatar } from "../Avatar"
 // import { useSession } from "@/hooks/useSession";
-import { Message } from "@prisma/client"
-import { useStore } from "@/hooks/useStore"
-import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
+import type { Message } from "@prisma/client"
 
 export function AgentMessageBubble({
   message,
 }: {
   message: Message
 }): JSX.Element {
-  const { widgetSettings } = useStore()
   return (
     <div className="flex my-2 space-x-2">
       <UserAvatar src="" alt="agent" name="Agent" customClass="w-8 h-8" />

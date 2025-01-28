@@ -8,6 +8,7 @@ const safelistClasses = themeColors.flatMap(({ bg, text, mainColor }) => [
 ])
 
 module.exports = {
+  // prefix: "wx-", // Add a prefix to all Tailwind classes: wx = widget x
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   safeList: safelistClasses,

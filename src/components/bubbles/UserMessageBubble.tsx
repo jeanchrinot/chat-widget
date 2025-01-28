@@ -2,11 +2,9 @@ import { format } from "date-fns"
 
 // local imports
 import { Message } from "@prisma/client"
-import { useLayout } from "@/hooks/useLayout"
 import { useStore } from "@/hooks/useStore"
 
 export function UserMessageBubble({ message }: { message: Message }) {
-  const { mainBgClassName, mainBgTextColorClassName } = useLayout()
   const { widgetSettings } = useStore()
 
   return (

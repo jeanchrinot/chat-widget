@@ -3,7 +3,7 @@ import { format } from "date-fns"
 // local imports
 import { UserAvatar } from "../Avatar"
 // import { useSession } from "@/hooks/useSession";
-import { Message } from "@prisma/client"
+import type { Message } from "@prisma/client"
 import { useStore } from "@/hooks/useStore"
 import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
 

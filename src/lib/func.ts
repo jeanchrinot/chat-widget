@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2"
-import { ParticipantType } from "@prisma/client"
+import type { ParticipantType } from "@prisma/client"
 
 export const createObjectId = () => {
   return createId()
@@ -12,9 +12,9 @@ export const createUserMessage = ({
   conversationId,
 }: {
   text: string | null
-  sessionId: string | null
-  userId: string | null
-  conversationId: string | null
+  sessionId: string
+  userId: string
+  conversationId: string
 }) => {
   const userMessage = {
     id: createObjectId(),
@@ -22,7 +22,7 @@ export const createUserMessage = ({
     attachments: null,
     sessionId,
     senderId: userId,
-    senderType: ParticipantType.User,
+    senderType: "User" as ParticipantType,
     conversationId: conversationId,
     deleted: false,
     status: "sending",

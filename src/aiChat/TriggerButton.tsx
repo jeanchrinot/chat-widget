@@ -8,15 +8,13 @@ import { useLayout } from "@/hooks/useLayout"
 import { useStore } from "@/hooks/useStore"
 import { assetBaseUrl } from "@/lib/api-client"
 // import { useSocket } from "@/lib/socket-provider"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 const TriggerButton = () => {
-  const { setOpenDialog } = useLayout()
+  const { setOpenDialog, openDialog } = useLayout()
+  const [channelId, setChannelId] = useState<string | null>(null)
 
   const {
-    channelId,
-    user,
     userToken,
-    botSettings,
     widgetSettings,
     setUserToken,
     setUser,
@@ -24,27 +22,96 @@ const TriggerButton = () => {
     setWidgetSettings,
     setConversation,
     setTransfer,
-    setMessages,
     setSessionId,
     setAgent,
     setBotAgent,
+    setTestKey,
   } = useStore()
 
-  const {
-    mutate: initiateChat,
-    isPending: isInitiateChatPending,
-    data: chatData,
-  } = useInitiateChatWidget()
-  const {
-    mutate: getChatWidget,
-    isPending: isWidgetDataPending,
-    data: widgetData,
-  } = useGetWidgetSettings()
-  // const { mutate: sendMessage } = useSendMessage();
+  const { mutate: initiateChat, isPending: isInitiateChatPending } =
+    useInitiateChatWidget()
+  const { mutate: getChatWidget, isPending: isWidgetDataPending } =
+    useGetWidgetSettings()
 
   const handleOpenDialog = () => {
     setOpenDialog(true)
   }
+
+  /**
+   * Get Channel Id from the chat widget script
+   * once the document is loaded
+   */
+
+  useEffect(() => {
+    // First get channel from url
+    // Get the current host and path
+    let channelId = null
+
+    const { hostname, pathname } = window.location
+    console.log("hostname", hostname)
+
+    // Define the expected domain
+    const expectedDomain = process.env.VITE_NEXT_WEBSITE_DOMAIN!
+    console.log("expectedDomain", expectedDomain)
+
+    // Check if the hostname matches the expected domain
+    if (hostname === expectedDomain) {
+      // Extract the channelId from the URL path
+      const pathSegments = pathname.split("/") // Split the path into segments
+      channelId = pathSegments.length > 2 ? pathSegments[2] : null // Assuming the structure is /chat/[channelId]
+
+      if (channelId) {
+        console.log("Channel ID:", channelId)
+        // Check for test
+        // Get the current URL's query parameters
+        const searchParams = new URLSearchParams(window.location.search)
+
+        // Check if the "test" parameter exists
+        const testParam = searchParams.get("test_key")
+        if (testParam) {
+          console.log('The "test" parameter exists.')
+          setTestKey(testParam)
+        } else {
+          console.log('The "test" parameter does not exist')
+        }
+      } else {
+        console.error("Channel ID not found in the URL path.")
+      }
+    } else {
+      console.log(`Host does not match the expected domain: ${expectedDomain}`)
+      // Access the script element
+      const scriptElement = document.querySelector<HTMLScriptElement>(
+        "script[chat-widget-channel-id]"
+      )
+
+      if (scriptElement) {
+        // Retrieve the chat-widget-channel-id attribute
+        channelId = scriptElement.getAttribute("chat-widget-channel-id")
+        console.log("Channel ID:", channelId)
+        if (!channelId) {
+          // Get Id
+          console.error("Channel ID attribute not found on the script element.")
+        }
+      } else {
+        console.error("Script element with widget-id not found.")
+      }
+    }
+
+    if (!channelId) {
+      // Get the port number from the current URL
+      const port = window.location.port || "5173"
+      console.log("port", port)
+      if (port == "5173") {
+        // Use Demo Channel Id By Default
+        channelId = process.env.VITE_NEXT_DEMO_CHANNEL_ID! || null
+        console.log("Demo channelId", channelId)
+      } else {
+        console.error("No port number found in the URL.")
+      }
+    }
+
+    setChannelId(channelId)
+  }, []) // Run once on component mount
 
   useEffect(() => {
     if (channelId && !userToken) {
@@ -98,11 +165,11 @@ const TriggerButton = () => {
     }
   }, [userToken])
 
-  if (isInitiateChatPending || isWidgetDataPending) return ""
+  if (isInitiateChatPending || isWidgetDataPending) return <></>
 
   return (
     <div
-      className={`absolute bottom-5 right-5 flex flex-col items-end space-y-2 ${userToken ? "" : "hidden"}`}
+      className={`absolute bottom-5 right-5 flex flex-col items-end space-y-2 ${!userToken || openDialog ? "hidden" : ""}`}
     >
       {widgetSettings && widgetSettings.buttonText && (
         <div
@@ -116,7 +183,7 @@ const TriggerButton = () => {
       )}
       <Button
         onClick={handleOpenDialog}
-        className="max-w-14 w-14 h-14 self-end outline-none px-0 py-0 inline-flex items-center justify-center overflow-hidden text-sm font-medium rounded-full group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 text-white"
+        className={`max-w-14 w-14 h-14 self-end outline-none px-0 py-0 inline-flex items-center justify-center overflow-hidden text-sm font-medium rounded-full group ${widgetSettings?.themeColor?.bg} ${widgetSettings?.themeColor?.text}`}
       >
         <SwapChildren>
           {widgetSettings && widgetSettings.buttonImage && (

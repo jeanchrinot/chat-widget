@@ -1,11 +1,10 @@
 import { useStore } from "@/hooks/useStore"
-import { assetBaseUrl, defaultAvatar } from "@/lib/api-client"
 import { Minus } from "lucide-react"
-import { UserAvatar } from "./Avatar"
 
 // Local imports
 // import { MenuDrawer } from "./Drawer"
 import { IconButton } from "./IconButton"
+import { HeaderAvatar } from "./ui/HeaderAvatar"
 
 interface HeaderProps {
   expanded: boolean
@@ -15,8 +14,7 @@ interface HeaderProps {
 }
 
 export function Header({ onExpand, expanded, onClose }: HeaderProps) {
-  // const { mainBgClassName } = useLayout()
-  const { widgetSettings, botSettings, agent } = useStore()
+  const { widgetSettings, agent } = useStore()
 
   console.log("agent", agent)
   return (
@@ -26,12 +24,7 @@ export function Header({ onExpand, expanded, onClose }: HeaderProps) {
       {/* <MenuDrawer /> */}
       <div className="flex flex-row">
         <div className="relative">
-          <UserAvatar
-            src={`${assetBaseUrl}${agent?.image || (agent?.agentType == "Bot" ? defaultAvatar : "")}`}
-            alt="Avatar"
-            name={agent?.name || "Agent"}
-            customClass="w-10 h-10"
-          />
+          <HeaderAvatar />
           <span
             className="flex w-2 h-2 bg-green-500 rounded-full absolute"
             style={{ bottom: "4px", right: "4px" }}

@@ -2,7 +2,6 @@
 import { useLayout } from "@/hooks/useLayout"
 import { useStore } from "@/hooks/useStore"
 // import { createUserMessage } from "@/lib/func"
-// import { ParticipantType } from "@prisma/client"
 // import { useEffect } from "react"
 
 export function QuickReply({ text }: { text: string }) {
